@@ -38,11 +38,11 @@
 		return nil;
 	}
 
-	// Establish or connection to the PPP data gatherer
+	// Establish or connection to the PPP data gatherer. When the pppconfd
+	// socket is absent, ppp interfaces use the sysctl counters.
 	pppGatherer = [MenuMeterNetPPP sharedPPP];
 	if (!pppGatherer) {
-		NSLog(@"MenuMeterNetStats unable to connect to PPP data gatherer. Abort.");
-		return nil;
+		NSLog(@"MenuMeterNetStats unable to connect to PPP data gatherer, using sysctl for PPP interfaces.");
 	}
 
 	// Prefetch the data first time
@@ -126,7 +126,7 @@
 		// Load in old statistics for this interface
 		NSDictionary *oldStats = [lastData objectForKey:interfaceName];
 
-		if ([interfaceName hasPrefix:@"ppp"]) {
+		if (pppGatherer && [interfaceName hasPrefix:@"ppp"]) {
 			// We handle PPP connections using data directly from ppp subsystem. On
 			// old systems this was required because the outbytes from sysctl was
 			// always zero.
