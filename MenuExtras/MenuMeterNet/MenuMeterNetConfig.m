@@ -67,11 +67,11 @@ static void scChangeCallback(SCDynamicStoreRef store, CFArrayRef changedKeys, vo
 		return nil;
 	}
 
-	// Get the PPP data puller
+	// Get the PPP data puller. This is nil when the pppconfd socket is absent,
+	// and PPP status lookups are then skipped.
 	pppGatherer = [MenuMeterNetPPP sharedPPP];
 	if (!pppGatherer) {
-		NSLog(@"MenuMeterNetConfig unable to establish pppconfd session.");
-		return nil;
+		NSLog(@"MenuMeterNetConfig unable to establish pppconfd session, PPP status unavailable.");
 	}
 
 	// Connect to SystemConfiguration
@@ -126,9 +126,13 @@ static void scChangeCallback(SCDynamicStoreRef store, CFArrayRef changedKeys, vo
 
 - (void)dealloc {
 
-	CFRunLoopRemoveSource(CFRunLoopGetCurrent(), scRunSource, kCFRunLoopDefaultMode);
-	CFRelease(scSession);
-	mach_port_deallocate(mach_task_self(), masterPort);
+	// init can bail out before any of these are set up
+	if (scRunSource) {
+		CFRunLoopRemoveSource(CFRunLoopGetCurrent(), scRunSource, kCFRunLoopDefaultMode);
+		CFRelease(scRunSource);
+	}
+	if (scSession) CFRelease(scSession);
+	if (masterPort) mach_port_deallocate(mach_task_self(), masterPort);
 
 } // dealloc
 
@@ -565,7 +569,7 @@ static void scChangeCallback(SCDynamicStoreRef store, CFArrayRef changedKeys, vo
 			[cachedInterfaceUp setObject:[linkDict objectForKey:@"Active"] forKey:interfaceName];
 			return [[linkDict objectForKey:@"Active"] boolValue];
 		}
-	} else if ([interfaceName hasPrefix:@"ppp"]) {
+	} else if (pppGatherer && [interfaceName hasPrefix:@"ppp"]) {
 		// PPP
 		NSDictionary *pppDict = [pppGatherer statusForInterfaceName:interfaceName];
 		if ([[pppDict objectForKey:@"status"] intValue] == PPP_RUNNING) {
