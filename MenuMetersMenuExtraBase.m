@@ -77,11 +77,6 @@
 -(void)timerFired:(id)notused
 {
     statusItem.button.image=self.image;
-    if(@available(macOS 12,*)){
-        if(self.isInstalledButHiddenBySystem){
-            [[NSNotificationCenter defaultCenter] postNotificationName:@"hiddenBySystem" object:nil];
-        }
-    }
 /*    NSImage*image=self.image;
     NSImage*canvas=[NSImage imageWithSize:image.size flipped:NO drawingHandler:^BOOL(NSRect dstRect) {
         [[[NSColor systemGrayColor] colorWithAlphaComponent:.3] setFill];
@@ -247,20 +242,6 @@
         isDark = YES;
     }
     return isDark;
-}
--(BOOL)isInstalledButHiddenBySystem
-{
-    NSWindow*window=statusItem.button.window;
-    if(!window){
-        return NO;
-    }
-    NSInteger windowID=window.windowNumber;
-    NSArray*onScreenWindows=CFBridgingRelease(CGWindowListCreate(kCGWindowListOptionOnScreenOnly, kCGNullWindowID));
-    for(id x in onScreenWindows){
-        if(windowID==(NSInteger)x)
-            return NO;
-    }
-    return YES;
 }
 -(NSColor*)menuBarTextColor
 {
